@@ -473,7 +473,7 @@
         </div>
     </div>
 
-    <script>
+      <script>
         // Canvas setup
         const canvas = document.getElementById('certificateCanvas');
         const ctx = canvas.getContext('2d');
@@ -599,7 +599,7 @@
 
         function drawPhotoArea(ctx) {
             // Photo frame (circular) - centered horizontally, moved down
-            const photoSize = 250; // Increased from 180 for better proportion
+            const photoSize = 200; // Increased from 180 for better proportion
             const photoX = (width - photoSize) / 2; // Center horizontally
             const photoY = 160; // Moved down from 100 for better spacing
             const radius = photoSize / 2;
@@ -621,7 +621,7 @@
         }
 
         function drawNameSection(ctx) {
-            const startY = 475; // Moved down from 320 for better spacing
+            const startY = 450; // Moved down from 320 for better spacing
             
             // Name - centered horizontally
             ctx.fillStyle = colors.text;
@@ -637,7 +637,7 @@
 
         function drawHeadline(ctx) {
             const centerX = width / 2;
-            const startY = 575; // Moved down from 420 for better spacing
+            const startY = 570; // Moved down from 420 for better spacing
             
             // Main headline
             ctx.fillStyle = colors.primary;
@@ -650,7 +650,7 @@
 
         function drawSubtext(ctx) {
             const centerX = width / 2;
-            const startY = 750; // Moved down from 580 for better spacing
+            const startY =750; // Moved down from 580 for better spacing
             
             ctx.fillStyle = colors.text;
             ctx.font = fonts.subtext;
