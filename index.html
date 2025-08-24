@@ -802,7 +802,7 @@
         }
 
         function drawNameSection(ctx) {
-            const startY = 490; // Moved down from 450 to 490 to accommodate larger photo
+            const startY = 520; // Moved down from 450 to 490 to accommodate larger photo
             
             // Name - centered horizontally
             ctx.fillStyle = colors.text;
@@ -813,7 +813,7 @@
             // Fixed designation - centered horizontally
             ctx.fillStyle = colors.lightText;
             ctx.font = fonts.designation;
-            ctx.fillText(FIXED_DESIGNATION, width / 2, startY + 50);
+            ctx.fillText(FIXED_DESIGNATION, width / 2, startY + 40);
         }
 
         function drawHeadline(ctx) {
