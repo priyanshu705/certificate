@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Savvy Indians - Certificate Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <style>
         * {
             margin: 0;
@@ -196,6 +197,54 @@
             font-size: 0.9rem;
         }
 
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid #1e3c72;
+            margin: 15px auto;
+            overflow: hidden;
+            background: #f8f9fa;
+            display: none;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-upload.has-image {
+            padding: 20px;
+        }
+
+        .photo-upload.has-image .photo-upload-icon,
+        .photo-upload.has-image .photo-upload-text,
+        .photo-upload.has-image .photo-upload-hint {
+            display: none;
+        }
+
+        .photo-upload.has-image .photo-preview {
+            display: block;
+        }
+
+        .change-photo-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .change-photo-btn:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+            transform: translateY(-2px);
+        }
+
         .btn {
             background: linear-gradient(135deg, #ce872a 0%, #2a5298 100%);
             color: white;
@@ -354,6 +403,103 @@
             text-align: center;
         }
 
+        .crop-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .crop-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .crop-container {
+            max-width: 600px;
+            max-height: 400px;
+            margin: 20px 0;
+        }
+
+        .crop-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .crop-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 3px solid #1e3c72;
+            margin: 20px auto;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .crop-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .crop-title {
+            color: #1e3c72;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .crop-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .crop-close:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .btn-crop {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        }
+
+        .btn-crop:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .btn-cancel:hover {
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -435,6 +581,10 @@
                         <span class="photo-upload-icon">📷</span>
                         <div class="photo-upload-text">Click to upload or drag & drop</div>
                         <div class="photo-upload-hint">JPG, PNG, or GIF (Max 5MB)</div>
+                        <div class="photo-preview" id="photoPreview">
+                            <img id="previewImg" src="/placeholder.svg" alt="Photo preview">
+                        </div>
+                        <button type="button" class="change-photo-btn" id="changePhotoBtn" style="display: none;">Change Photo</button>
                         <input type="file" id="participantPhoto" accept="image/*">
                     </div>
                 </div>
@@ -468,12 +618,28 @@
             <canvas id="previewCanvas" width="1080" height="1080" class="preview-canvas"></canvas>
             <div class="preview-actions">
                 <button class="btn" id="modalDownloadBtn">💾 Download Certificate</button>
-              
             </div>
         </div>
     </div>
 
-      <script>
+    <!-- Cropping Modal -->
+    <div class="crop-overlay" id="cropOverlay">
+        <div class="crop-modal">
+            <button class="crop-close" id="cropClose">&times;</button>
+            <h3 class="crop-title">✂️ Crop Your Photo</h3>
+            <div class="crop-container">
+                <img id="cropImage" src="/placeholder.svg" alt="Image to crop">
+            </div>
+            <div class="crop-preview" id="cropPreview"></div>
+            <div class="crop-actions">
+                <button class="btn btn-crop" id="confirmCrop">✅ Use This Crop</button>
+                <button class="btn btn-cancel" id="cancelCrop">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script>
         // Canvas setup
         const canvas = document.getElementById('certificateCanvas');
         const ctx = canvas.getContext('2d');
@@ -484,12 +650,27 @@
         const participantName = document.getElementById('participantName');
         const participantPhoto = document.getElementById('participantPhoto');
         const photoUpload = document.getElementById('photoUpload');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewImg = document.getElementById('previewImg');
+        const changePhotoBtn = document.getElementById('changePhotoBtn');
         const previewBtn = document.getElementById('previewBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const previewOverlay = document.getElementById('previewOverlay');
         const previewClose = document.getElementById('previewClose');
         const modalDownloadBtn = document.getElementById('modalDownloadBtn');
         const successMessage = document.getElementById('successMessage');
+
+        // Cropping elements
+        const cropOverlay = document.getElementById('cropOverlay');
+        const cropImage = document.getElementById('cropImage');
+        const cropPreview = document.getElementById('cropPreview');
+        const confirmCrop = document.getElementById('confirmCrop');
+        const cancelCrop = document.getElementById('cancelCrop');
+        const cropClose = document.getElementById('cropClose');
+
+        // Cropper instance and cropped image data
+        let cropper = null;
+        let croppedImageData = null;
 
         // Certificate dimensions
         const width = 1080;
@@ -599,9 +780,9 @@
 
         function drawPhotoArea(ctx) {
             // Photo frame (circular) - centered horizontally, moved down
-            const photoSize = 200; // Increased from 180 for better proportion
+            const photoSize = 280; // Increased from 200 for larger photo display
             const photoX = (width - photoSize) / 2; // Center horizontally
-            const photoY = 160; // Moved down from 100 for better spacing
+            const photoY = 180; // Moved down from 160 to 180 for better spacing with larger photo
             const radius = photoSize / 2;
             
             // Photo background circle
@@ -621,7 +802,7 @@
         }
 
         function drawNameSection(ctx) {
-            const startY = 450; // Moved down from 320 for better spacing
+            const startY = 490; // Moved down from 450 to 490 to accommodate larger photo
             
             // Name - centered horizontally
             ctx.fillStyle = colors.text;
@@ -637,7 +818,7 @@
 
         function drawHeadline(ctx) {
             const centerX = width / 2;
-            const startY = 570; // Moved down from 420 for better spacing
+            const startY = 610; // Moved down from 570 to 610 to prevent overlap with name section
             
             // Main headline
             ctx.fillStyle = colors.primary;
@@ -650,7 +831,7 @@
 
         function drawSubtext(ctx) {
             const centerX = width / 2;
-            const startY =750; // Moved down from 580 for better spacing
+            const startY = 790; // Moved down from 750 to 790 to prevent overlap with headline
             
             ctx.fillStyle = colors.text;
             ctx.font = fonts.subtext;
@@ -682,7 +863,7 @@
 
         function drawFooter(ctx) {
             const centerX = width / 2;
-            const startY = height - 120; // Moved up from height - 80 for better spacing
+            const startY = height - 100; // Moved up from height - 120 to height - 100 for better balance
             
             ctx.fillStyle = colors.lightText;
             ctx.font = fonts.footer;
@@ -691,48 +872,25 @@
         }
 
         function drawParticipantPhoto(ctx) {
-            if (participantPhoto.files && participantPhoto.files[0]) {
-                const file = participantPhoto.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const photoSize = 200; // Increased from 180 for better proportion
-                        const photoX = (width - photoSize) / 2; // Center horizontally
-                        const photoY = 160; // Moved down from 100 for better spacing
-                        const radius = photoSize / 2;
-                        
-                        // Create circular clipping path
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(photoX + radius, photoY + radius, radius, 0, 2 * Math.PI);
-                        ctx.clip();
-                        
-                        // Calculate aspect ratio and positioning
-                        const imgAspect = img.width / img.height;
-                        const frameAspect = 1; // Square frame
-                        
-                        let drawWidth, drawHeight, offsetX, offsetY;
-                        
-                        if (imgAspect > frameAspect) {
-                            drawHeight = photoSize;
-                            drawWidth = photoSize * imgAspect;
-                            offsetX = photoX + (photoSize - drawWidth) / 2;
-                            offsetY = photoY;
-                        } else {
-                            drawWidth = photoSize;
-                            drawHeight = photoSize / imgAspect;
-                            offsetX = photoX;
-                            offsetY = photoY + (photoSize - drawHeight) / 2;
-                        }
-                        
-                        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-                        ctx.restore();
-                    };
-                    img.src = e.target.result;
+            if (croppedImageData) {
+                const img = new Image();
+                img.onload = function() {
+                    const photoSize = 280; // Increased from 200 to match drawPhotoArea
+                    const photoX = (width - photoSize) / 2;
+                    const photoY = 180; // Updated to match drawPhotoArea positioning
+                    const radius = photoSize / 2;
+                    
+                    // Create circular clipping path
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(photoX + radius, photoY + radius, radius, 0, 2 * Math.PI);
+                    ctx.clip();
+                    
+                    // Draw the cropped image (already properly sized and positioned)
+                    ctx.drawImage(img, photoX, photoY, photoSize, photoSize);
+                    ctx.restore();
                 };
-                reader.readAsDataURL(file);
+                img.src = croppedImageData;
             }
         }
 
@@ -794,25 +952,101 @@
             link.click();
         }
 
-        // Drag and drop functionality
-        photoUpload.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            photoUpload.classList.add('dragover');
-        });
+        function showCropModal(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cropImage.src = e.target.result;
+                cropOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+                // Initialize cropper
+                if (cropper) {
+                    cropper.destroy();
+                }
+                
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1, // Square crop for circular display
+                    viewMode: 2,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    ready: function() {
+                        updateCropPreview();
+                    },
+                    crop: function() {
+                        updateCropPreview();
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
 
-        photoUpload.addEventListener('dragleave', () => {
-            photoUpload.classList.remove('dragover');
-        });
-
-        photoUpload.addEventListener('drop', (e) => {
-            e.preventDefault();
-            photoUpload.classList.remove('dragover');
+        function updateCropPreview() {
+            if (!cropper) return;
             
-            if (e.dataTransfer.files.length > 0) {
-                participantPhoto.files = e.dataTransfer.files;
-                participantPhoto.dispatchEvent(new Event('change'));
+            const canvas = cropper.getCroppedCanvas({
+                width: 150,
+                height: 150
+            });
+            
+            cropPreview.innerHTML = '';
+            if (canvas) {
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.borderRadius = '50%';
+                cropPreview.appendChild(canvas);
             }
-        });
+        }
+
+        function confirmCropAction() {
+            if (!cropper) return;
+            
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas({
+                width: 400,
+                height: 400
+            });
+            
+            if (canvas) {
+                // Store cropped image data
+                croppedImageData = canvas.toDataURL('image/png');
+                
+                // Update preview in upload area
+                previewImg.src = croppedImageData;
+                photoUpload.classList.add('has-image');
+                changePhotoBtn.style.display = 'inline-block';
+                
+                // Close crop modal
+                closeCropModal();
+                
+                // Regenerate certificate
+                generateCertificate(ctx);
+            }
+        }
+
+        function closeCropModal() {
+            cropOverlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        function resetPhotoUpload() {
+            photoUpload.classList.remove('has-image');
+            changePhotoBtn.style.display = 'none';
+            croppedImageData = null;
+            participantPhoto.value = '';
+            generateCertificate(ctx);
+        }
 
         // Event listeners
         previewBtn.addEventListener('click', showPreview);
@@ -827,13 +1061,86 @@
             }
         });
 
+        participantPhoto.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                
+                // Validate file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file');
+                    return;
+                }
+                
+                showCropModal(file);
+            }
+        });
+
+        // Crop modal event listeners
+        confirmCrop.addEventListener('click', confirmCropAction);
+        cancelCrop.addEventListener('click', closeCropModal);
+        cropClose.addEventListener('click', closeCropModal);
+        
+        // Close crop modal on overlay click
+        cropOverlay.addEventListener('click', (e) => {
+            if (e.target === cropOverlay) {
+                closeCropModal();
+            }
+        });
+
+        // Change photo button functionality
+        changePhotoBtn.addEventListener('click', () => {
+            participantPhoto.click();
+        });
+
+        photoUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            photoUpload.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                
+                // Validate file
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+                
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file');
+                    return;
+                }
+                
+                showCropModal(file);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                showPreview();
+            }
+            if (e.key === 'Escape') {
+                if (cropOverlay.style.display === 'flex') {
+                    closeCropModal();
+                } else {
+                    closePreview();
+                }
+            }
+        });
+
         // Auto-generate on input changes
         participantName.addEventListener('input', () => {
             generateCertificate(ctx);
         });
         
-        participantPhoto.addEventListener('change', () => {
-            generateCertificate(ctx);
+        // Regenerate certificate when photo is changed
+        changePhotoBtn.addEventListener('click', () => {
+            participantPhoto.click();
         });
 
         // Generate initial certificate
@@ -846,16 +1153,6 @@
 
         participantName.addEventListener('blur', () => {
             participantName.parentElement.style.transform = 'scale(1)';
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                showPreview();
-            }
-            if (e.key === 'Escape') {
-                closePreview();
-            }
         });
     </script>
 </body>
